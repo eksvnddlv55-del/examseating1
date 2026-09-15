@@ -59,7 +59,7 @@ export const SeatingChart: React.FC<SeatingChartProps> = ({
 }) => {
   const total = students.length;
   const config = getSeatConfig(total);
-  const maxRows = Math.max(config.c1, config.c2, config.c3, config.c4, config.c5, 8); // 최소 8행은 확보 (요구사항 8행 격자)
+  const maxRows = Math.max(config.c1, config.c2, config.c3, config.c4, config.c5); 
   
   // 열별 학생 분배
   const cols: (Student | null)[][] = [[], [], [], [], []];
@@ -77,7 +77,7 @@ export const SeatingChart: React.FC<SeatingChartProps> = ({
   });
 
   return (
-    <div className="w-full max-w-[1100px] mx-auto bg-white p-8 text-black print:p-0 print:m-0 print:max-w-none">
+    <div className="w-[1122px] mx-auto bg-white p-8 text-black shadow-lg mb-8 print:p-0 print:m-0 print:w-full print:shadow-none print:mb-0">
       <h1 className="text-2xl font-bold text-center mb-6">
         2026학년도 2학기 1차 정기시험 {subject}({grade}학년) {classGroup}반({examClassroom}) 자리배치표
       </h1>
@@ -91,7 +91,7 @@ export const SeatingChart: React.FC<SeatingChartProps> = ({
         </div>
         
         {/* 본문 격자 영역 */}
-        <div className="flex">
+        <div className="flex min-h-[500px]">
           {/* 운동장 */}
           <div className="w-16 flex items-center justify-center border-r border-black font-bold text-xl [writing-mode:vertical-rl] tracking-[1.5em]">
             운동장
@@ -115,7 +115,7 @@ export const SeatingChart: React.FC<SeatingChartProps> = ({
                   return (
                     <div 
                       key={`${rowIndex}-${colIndex}`}
-                      className={`h-20 sm:h-24 lg:h-28 border-b border-black flex flex-col items-center justify-center p-2 ${isLastCol ? '' : 'border-r'} relative`}
+                      className={`h-20 print:h-[75px] border-b border-black flex flex-col items-center justify-center p-2 ${isLastCol ? '' : 'border-r'} relative`}
                     >
                       {student ? (
                         <>

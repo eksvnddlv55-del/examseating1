@@ -3,9 +3,32 @@ import { Upload, FileText, Settings, Printer, Loader2 } from 'lucide-react';
 import { SeatingChart } from './components/SeatingChart';
 import { ParsedData } from './types';
 
+// 반 포함 여부 확인 헬퍼 함수
+const isClassMatch = (classNum: number, input: string) => {
+  if (!input.trim()) return true;
+  const parts = input.split(',').map(s => s.trim());
+  for (const part of parts) {
+    if (part.includes('~') || part.includes('-')) {
+      const splitChar = part.includes('~') ? '~' : '-';
+      const [start, end] = part.split(splitChar).map(n => parseInt(n.trim(), 10));
+      if (classNum >= start && classNum <= end) return true;
+    } else {
+      if (classNum === parseInt(part, 10)) return true;
+    }
+  }
+  return false;
+};
+
 export default function App() {
   const [file, setFile] = useState<File | null>(null);
-  const [examClassroom, setExamClassroom] = useState<string>('');
+  
+  // 상태: 응시인원 및 분반 옵션
+  const [isOver36, setIsOver36] = useState<boolean>(false);
+  const [examClassroom1, setExamClassroom1] = useState<string>('');
+  const [classLimit1, setClassLimit1] = useState<string>('');
+  const [examClassroom2, setExamClassroom2] = useState<string>('');
+  const [classLimit2, setClassLimit2] = useState<string>('');
+  
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,8 +46,12 @@ export default function App() {
       setError('PDF 파일을 업로드해주세요.');
       return;
     }
-    if (!examClassroom.trim()) {
+    if (!isOver36 && !examClassroom1.trim()) {
       setError('응시교실을 입력해주세요. (예: 2-13)');
+      return;
+    }
+    if (isOver36 && (!examClassroom1.trim() || !examClassroom2.trim() || !classLimit1.trim() || !classLimit2.trim())) {
+      setError('분반 설정에 필요한 응시교실과 반 기준을 모두 입력해주세요.');
       return;
     }
 
@@ -39,7 +66,7 @@ export default function App() {
       const base64Promise = new Promise<string>((resolve, reject) => {
         reader.onload = () => {
           const result = reader.result as string;
-          resolve(result.split(',')[1]); // 'data:application/pdf;base64,' 부분 제거
+          resolve(result.split(',')[1]); 
         };
         reader.onerror = error => reject(error);
       });
@@ -50,7 +77,10 @@ export default function App() {
       const response = await fetch('/api/parse-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pdfBase64, examClassroom })
+        body: JSON.stringify({ 
+          pdfBase64, 
+          examClassroom: examClassroom1 || '미정' 
+        })
       });
 
       if (!response.ok) {
@@ -139,27 +169,85 @@ export default function App() {
 
             {/* 교실 입력 및 실행 */}
             <div className="flex flex-col">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                응시교실 정보
-              </label>
-              <div className="flex-1 flex flex-col justify-between">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Settings className="h-5 w-5 text-gray-400" />
-                  </div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  응시교실 정보
+                </label>
+                <div className="flex items-center">
                   <input
-                    type="text"
-                    value={examClassroom}
-                    onChange={(e) => setExamClassroom(e.target.value)}
-                    placeholder="예: 2-13"
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    id="isOver36"
+                    type="checkbox"
+                    checked={isOver36}
+                    onChange={(e) => setIsOver36(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                   />
+                  <label htmlFor="isOver36" className="ml-2 text-sm font-medium text-gray-900">
+                    응시인원 37명 이상 (분반)
+                  </label>
                 </div>
+              </div>
+              
+              <div className="flex-1 flex flex-col">
+                {!isOver36 ? (
+                  <div className="relative mb-4">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Settings className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      value={examClassroom1}
+                      onChange={(e) => setExamClassroom1(e.target.value)}
+                      placeholder="응시교실 (예: 2-13)"
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-3 mb-4">
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                      <p className="text-sm font-bold text-gray-700 mb-2">제1 시험실</p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={examClassroom1}
+                          onChange={(e) => setExamClassroom1(e.target.value)}
+                          placeholder="응시교실 (예: 2-13)"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                        />
+                        <input
+                          type="text"
+                          value={classLimit1}
+                          onChange={(e) => setClassLimit1(e.target.value)}
+                          placeholder="대상 반 (예: 1-5)"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                      <p className="text-sm font-bold text-gray-700 mb-2">제2 시험실</p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={examClassroom2}
+                          onChange={(e) => setExamClassroom2(e.target.value)}
+                          placeholder="응시교실 (예: 2-14)"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                        />
+                        <input
+                          type="text"
+                          value={classLimit2}
+                          onChange={(e) => setClassLimit2(e.target.value)}
+                          placeholder="대상 반 (예: 6-10)"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <button
                   onClick={handleProcess}
                   disabled={isLoading}
-                  className="w-full mt-4 flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full mt-auto flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
                     <>
@@ -184,14 +272,36 @@ export default function App() {
 
         {/* 결과 표시 영역 */}
         {parsedData && (
-          <section className="print:m-0 print:p-0 bg-white">
-             <SeatingChart 
-               students={parsedData.students}
-               subject={parsedData.subject}
-               grade={parsedData.grade}
-               classGroup={parsedData.classGroup}
-               examClassroom={examClassroom}
-             />
+          <section className="print:m-0 print:p-0 bg-gray-100 p-8 rounded-xl overflow-x-auto print:bg-white print:overflow-visible">
+            <div className="min-w-[1122px] print:min-w-0">
+              {isOver36 ? (
+                <>
+                  <SeatingChart 
+                    students={parsedData.students.filter(s => isClassMatch(s.class, classLimit1))}
+                    subject={parsedData.subject}
+                    grade={parsedData.grade}
+                    classGroup={parsedData.classGroup}
+                    examClassroom={examClassroom1}
+                  />
+                  <div className="break-before-page h-8 print:h-0" />
+                  <SeatingChart 
+                    students={parsedData.students.filter(s => isClassMatch(s.class, classLimit2))}
+                    subject={parsedData.subject}
+                    grade={parsedData.grade}
+                    classGroup={parsedData.classGroup}
+                    examClassroom={examClassroom2}
+                  />
+                </>
+              ) : (
+                <SeatingChart 
+                  students={parsedData.students}
+                  subject={parsedData.subject}
+                  grade={parsedData.grade}
+                  classGroup={parsedData.classGroup}
+                  examClassroom={examClassroom1}
+                />
+              )}
+            </div>
           </section>
         )}
         
