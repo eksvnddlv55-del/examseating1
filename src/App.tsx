@@ -19,6 +19,19 @@ const isClassMatch = (classNum: number, input: string) => {
   return false;
 };
 
+// 학생 제외 여부 확인 헬퍼 함수
+const isStudentExcluded = (student: any, excludesStr: string, noExclude: boolean) => {
+  if (noExclude || !excludesStr.trim()) return false;
+  const excludes = excludesStr.split(',').map(s => s.trim());
+  
+  const g = student.grade;
+  const c = student.class.toString().padStart(2, '0');
+  const n = student.number.toString().padStart(2, '0');
+  const studentId = `${g}${c}${n}`;
+  
+  return excludes.includes(studentId);
+};
+
 export default function App() {
   const [file, setFile] = useState<File | null>(null);
   
@@ -28,6 +41,10 @@ export default function App() {
   const [classLimit1, setClassLimit1] = useState<string>('');
   const [examClassroom2, setExamClassroom2] = useState<string>('');
   const [classLimit2, setClassLimit2] = useState<string>('');
+  
+  // 제외 필요 응시생 학번
+  const [excludeIds, setExcludeIds] = useState<string>('');
+  const [noExclude, setNoExclude] = useState<boolean>(false);
   
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -95,6 +112,13 @@ export default function App() {
       }
 
       const data: ParsedData = await response.json();
+      
+      // 체크박스가 해제되어 있는데 총 인원이 37명 이상일 경우 에러 처리
+      const validStudents = data.students.filter(s => !isStudentExcluded(s, excludeIds, noExclude));
+      if (!isOver36 && validStudents.length > 36) {
+        throw new Error('평가 인원이 37명 이상입니다. 추가분반 체크박스를 눌러주시기 바랍니다.');
+      }
+      
       setParsedData(data);
     } catch (err: any) {
       console.error(err);
@@ -168,7 +192,7 @@ export default function App() {
             <div className="flex flex-col">
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  응시교실 정보
+                  평가교실 정보 입력
                 </label>
                 <div className="flex items-center">
                   <input
@@ -179,7 +203,7 @@ export default function App() {
                     className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
                   />
                   <label htmlFor="isOver36" className="ml-2 text-sm font-medium text-gray-900">
-                    응시인원 37명 이상 (분반)
+                    평가인원 37명 이상 (추가분반)
                   </label>
                 </div>
               </div>
@@ -187,27 +211,24 @@ export default function App() {
               <div className="flex-1 flex flex-col">
                 {!isOver36 ? (
                   <div className="relative mb-4">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Settings className="h-5 w-5 text-gray-400" />
-                    </div>
                     <input
                       type="text"
                       value={examClassroom1}
                       onChange={(e) => setExamClassroom1(e.target.value)}
-                      placeholder="응시교실 (예: 2-13)"
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 bg-white"
+                      placeholder="예: 2-13"
+                      className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 bg-white"
                     />
                   </div>
                 ) : (
                   <div className="space-y-3 mb-4">
                     <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                      <p className="text-sm font-bold text-gray-700 mb-2">제1 시험실</p>
+                      <p className="text-sm font-bold text-gray-700 mb-2">추가분반-a</p>
                       <div className="flex gap-2">
                         <input
                           type="text"
                           value={examClassroom1}
                           onChange={(e) => setExamClassroom1(e.target.value)}
-                          placeholder="응시교실 (예: 2-13)"
+                          placeholder="예: 2-13"
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-purple-500 focus:border-purple-500"
                         />
                         <input
@@ -220,26 +241,61 @@ export default function App() {
                       </div>
                     </div>
                     <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                      <p className="text-sm font-bold text-gray-700 mb-2">제2 시험실</p>
+                      <p className="text-sm font-bold text-gray-700 mb-2">추가분반-b</p>
                       <div className="flex gap-2">
                         <input
                           type="text"
                           value={examClassroom2}
                           onChange={(e) => setExamClassroom2(e.target.value)}
-                          placeholder="응시교실 (예: 2-14)"
+                          placeholder="예: 2-14"
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-purple-500 focus:border-purple-500"
                         />
                         <input
                           type="text"
                           value={classLimit2}
                           onChange={(e) => setClassLimit2(e.target.value)}
-                          placeholder="대상 반 (예: 6-10)"
+                          placeholder="대상 반 (예: 6-13)"
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-purple-500 focus:border-purple-500"
                         />
                       </div>
                     </div>
                   </div>
                 )}
+                
+                {/* 제외 필요 응시생 학번 입력란 */}
+                <div className="mt-2 mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      별도고사실 및 제적 수강생 학번 입력
+                    </label>
+                    <div className="flex items-center">
+                      <input
+                        id="noExclude"
+                        type="checkbox"
+                        checked={noExclude}
+                        onChange={(e) => {
+                          setNoExclude(e.target.checked);
+                          if (e.target.checked) setExcludeIds('');
+                        }}
+                        className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
+                      />
+                      <label htmlFor="noExclude" className="ml-2 text-sm font-medium text-gray-900">
+                        없음
+                      </label>
+                    </div>
+                  </div>
+                  <input
+                    type="text"
+                    value={excludeIds}
+                    onChange={(e) => setExcludeIds(e.target.value)}
+                    disabled={noExclude}
+                    placeholder="예: 20525, 20526"
+                    className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 bg-white disabled:bg-gray-100 disabled:text-gray-400"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    여러 명일 경우 쉼표(,)로 구분하여 5자리 학번을 입력하세요.
+                  </p>
+                </div>
                 
                 <button
                   onClick={handleProcess}
@@ -274,7 +330,7 @@ export default function App() {
               {isOver36 ? (
                 <>
                   <SeatingChart 
-                    students={parsedData.students.filter(s => isClassMatch(s.class, classLimit1))}
+                    students={parsedData.students.filter(s => isClassMatch(s.class, classLimit1) && !isStudentExcluded(s, excludeIds, noExclude))}
                     subject={parsedData.subject}
                     grade={parsedData.grade}
                     classGroup={parsedData.classGroup}
@@ -282,7 +338,7 @@ export default function App() {
                   />
                   <div className="break-before-page h-8 print:h-0" />
                   <SeatingChart 
-                    students={parsedData.students.filter(s => isClassMatch(s.class, classLimit2))}
+                    students={parsedData.students.filter(s => isClassMatch(s.class, classLimit2) && !isStudentExcluded(s, excludeIds, noExclude))}
                     subject={parsedData.subject}
                     grade={parsedData.grade}
                     classGroup={parsedData.classGroup}
@@ -291,7 +347,7 @@ export default function App() {
                 </>
               ) : (
                 <SeatingChart 
-                  students={parsedData.students}
+                  students={parsedData.students.filter(s => !isStudentExcluded(s, excludeIds, noExclude))}
                   subject={parsedData.subject}
                   grade={parsedData.grade}
                   classGroup={parsedData.classGroup}
