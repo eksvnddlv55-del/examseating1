@@ -59,7 +59,7 @@ export const SeatingChart: React.FC<SeatingChartProps> = ({
 }) => {
   const total = students.length;
   const config = getSeatConfig(total);
-  const maxRows = Math.max(config.c1, config.c2, config.c3, config.c4, config.c5); 
+  const maxRows = Math.max(config.c1, config.c2, config.c3, config.c4, config.c5, 5); 
   
   // 열별 학생 분배
   const cols: (Student | null)[][] = [[], [], [], [], []];
