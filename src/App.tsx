@@ -117,10 +117,7 @@ export default function App() {
       {/* 헤더 (인쇄 시 숨김) */}
       <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between print:hidden">
         <div className="flex items-center gap-2">
-          <div className="bg-blue-600 p-2 rounded-lg text-white">
-            <FileText size={24} />
-          </div>
-          <h1 className="text-xl font-bold tracking-tight">정기시험 자리배치표 생성기</h1>
+          <h1 className="text-xl font-bold tracking-tight">정기시험 자리배치표 생성</h1>
         </div>
         {parsedData && (
           <button 
@@ -157,7 +154,7 @@ export default function App() {
                 />
                 <Upload className="text-gray-400 mb-3" size={32} />
                 {file ? (
-                  <p className="text-blue-600 font-medium truncate max-w-[200px]">{file.name}</p>
+                  <p className="text-purple-600 font-medium truncate max-w-[200px]">{file.name}</p>
                 ) : (
                   <>
                     <p className="text-gray-600 font-medium">클릭하여 파일 선택</p>
@@ -179,7 +176,7 @@ export default function App() {
                     type="checkbox"
                     checked={isOver36}
                     onChange={(e) => setIsOver36(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500"
                   />
                   <label htmlFor="isOver36" className="ml-2 text-sm font-medium text-gray-900">
                     응시인원 37명 이상 (분반)
@@ -198,7 +195,7 @@ export default function App() {
                       value={examClassroom1}
                       onChange={(e) => setExamClassroom1(e.target.value)}
                       placeholder="응시교실 (예: 2-13)"
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white"
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 bg-white"
                     />
                   </div>
                 ) : (
@@ -211,14 +208,14 @@ export default function App() {
                           value={examClassroom1}
                           onChange={(e) => setExamClassroom1(e.target.value)}
                           placeholder="응시교실 (예: 2-13)"
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-purple-500 focus:border-purple-500"
                         />
                         <input
                           type="text"
                           value={classLimit1}
                           onChange={(e) => setClassLimit1(e.target.value)}
                           placeholder="대상 반 (예: 1-5)"
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-purple-500 focus:border-purple-500"
                         />
                       </div>
                     </div>
@@ -230,14 +227,14 @@ export default function App() {
                           value={examClassroom2}
                           onChange={(e) => setExamClassroom2(e.target.value)}
                           placeholder="응시교실 (예: 2-14)"
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-purple-500 focus:border-purple-500"
                         />
                         <input
                           type="text"
                           value={classLimit2}
                           onChange={(e) => setClassLimit2(e.target.value)}
                           placeholder="대상 반 (예: 6-10)"
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-purple-500 focus:border-purple-500"
                         />
                       </div>
                     </div>
@@ -247,7 +244,7 @@ export default function App() {
                 <button
                   onClick={handleProcess}
                   disabled={isLoading}
-                  className="w-full mt-auto flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full mt-auto flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
                     <>
