@@ -50,12 +50,39 @@ export default function App() {
   const [parsedData, setParsedData] = useState<ParsedData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setFile(e.target.files[0]);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const droppedFile = e.dataTransfer.files[0];
+      const validTypes = ['.xlsx', '.xls', '.csv'];
+      const fileExt = droppedFile.name.substring(droppedFile.name.lastIndexOf('.')).toLowerCase();
+      
+      if (validTypes.includes(fileExt) || droppedFile.type.includes('excel') || droppedFile.type.includes('spreadsheet')) {
+        setFile(droppedFile);
+      } else {
+        setError('지원하지 않는 파일 형식입니다. 엑셀 파일(.xlsx, .xls, .csv)을 업로드해주세요.');
+      }
     }
   };
 
@@ -93,21 +120,23 @@ export default function App() {
       // 예: "교과 : 기하 2학년 2-4 C" 또는 "교과:기하 2학년 2-4 C"
       for (let i = 0; i < Math.min(rows.length, 10); i++) {
         for (let j = 0; j < rows[i].length; j++) {
-          const cell = String(rows[i][j] || '');
+          const cell = String(rows[i][j] || '').trim();
           if (cell.includes('교과') && cell.includes('학년')) {
-             const match = cell.match(/교과\s*[:\s]*([^\s]+)\s+(\d+)학년\s+.*?\s+([A-Za-z0-9가-힣]+)$/);
+             // 과목명에 띄어쓰기가 포함된 경우를 위해 (.+?)로 캡처하여 학년 이전까지 전부 가져옴
+             const match = cell.match(/교과\s*[:\s]*(.+?)\s+(\d+)학년\s+.*?\s+([A-Za-z0-9가-힣]+)$/);
              if (match) {
-               subject = match[1];
+               subject = match[1].trim();
                grade = match[2];
                classGroup = match[3];
              } else {
+               // 양식이 조금 다를 경우를 대비한 느슨한 추출
+               const looseMatch = cell.match(/교과\s*[:\s]*(.+?)\s+(\d+)학년/);
+               if (looseMatch) {
+                 subject = looseMatch[1].trim();
+                 grade = looseMatch[2];
+               }
                const splits = cell.split(/\s+/);
-               const subjectIndex = splits.findIndex(s => s.includes('교과'));
-               if (subjectIndex !== -1 && splits[subjectIndex+1]) subject = splits[subjectIndex+1].replace(':', '');
-               const gradeMatch = cell.match(/(\d+)학년/);
-               if (gradeMatch) grade = gradeMatch[1];
-               classGroup = splits[splits.length - 1]; 
-               if (subject === '' || subject === ':') subject = splits[subjectIndex+2] || '미상';
+               classGroup = splits[splits.length - 1];
              }
           }
         }
@@ -236,8 +265,13 @@ export default function App() {
                 나이스 출석부 엑셀 업로드
               </label>
               <div 
-                className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                className={`border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center transition-colors cursor-pointer ${
+                  isDragging ? 'border-purple-500 bg-purple-50' : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
+                }`}
                 onClick={() => fileInputRef.current?.click()}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
               >
                 <input 
                   type="file" 
@@ -246,12 +280,14 @@ export default function App() {
                   ref={fileInputRef}
                   onChange={handleFileChange}
                 />
-                <Upload className="text-gray-400 mb-3" size={32} />
+                <Upload className={`${isDragging ? 'text-purple-500' : 'text-gray-400'} mb-3`} size={32} />
                 {file ? (
                   <p className="text-purple-600 font-medium truncate max-w-[200px]">{file.name}</p>
                 ) : (
                   <>
-                    <p className="text-gray-600 font-medium">클릭하여 엑셀 파일 선택</p>
+                    <p className={`${isDragging ? 'text-purple-600' : 'text-gray-600'} font-medium`}>
+                      {isDragging ? '파일을 여기에 놓아주세요' : '클릭하거나 파일을 드래그하여 업로드'}
+                    </p>
                     <p className="text-xs text-gray-400 mt-1">.xlsx, .xls, .csv 형식만 지원합니다</p>
                   </>
                 )}

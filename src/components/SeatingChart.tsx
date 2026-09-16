@@ -77,40 +77,40 @@ export const SeatingChart: React.FC<SeatingChartProps> = ({
   });
 
   return (
-    <div className="w-[1122px] mx-auto bg-white p-8 text-black shadow-lg mb-8 print:p-0 print:m-0 print:w-full print:shadow-none print:mb-0">
-      <h1 className="text-2xl font-bold text-center mb-6 print:mb-4">
+    <div className="w-full max-w-[1122px] mx-auto bg-white p-4 sm:p-8 text-black shadow-lg mb-8 print:p-0 print:m-0 print:shadow-none print:mb-0 print:max-w-none">
+      <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-center mb-6 print:mb-4 print:text-2xl">
         2026학년도 2학기 1차 정기시험 {subject}({grade}학년) {classGroup}반({examClassroom}) 자리배치표
       </h1>
       
       <div className="border-2 border-black">
         {/* 교탁 영역 (3열과 정확히 일치하도록 너비 및 테두리 조정) */}
         <div className="flex border-b border-black">
-          <div className="w-16 border-r border-black shrink-0"></div> {/* 운동장 여백 */}
+          <div className="w-8 sm:w-12 md:w-16 print:w-16 border-r border-black shrink-0"></div> {/* 운동장 여백 */}
           <div className="flex-1 grid grid-cols-5">
             <div className="col-span-2 border-r border-black"></div>
-            <div className="col-span-1 flex items-center justify-center py-3 print:py-2 font-bold text-xl border-r border-black">
+            <div className="col-span-1 flex items-center justify-center py-2 sm:py-3 print:py-2 font-bold text-sm sm:text-base md:text-xl print:text-xl border-r border-black">
               &nbsp;&nbsp;&nbsp;교탁&nbsp;&nbsp;&nbsp;
             </div>
             <div className="col-span-2"></div>
           </div>
-          <div className="w-16 border-l border-black shrink-0"></div> {/* 복도 여백 */}
+          <div className="w-8 sm:w-12 md:w-16 print:w-16 border-l border-black shrink-0"></div> {/* 복도 여백 */}
         </div>
         
         {/* 본문 격자 영역 */}
-        <div className="flex min-h-[500px] print:min-h-0">
+        <div className="flex min-h-[400px] sm:min-h-[500px] print:min-h-0">
           {/* 운동장 */}
-          <div className="w-16 flex items-center justify-center border-r border-black font-bold text-xl [writing-mode:vertical-rl] tracking-[1.5em]">
+          <div className="w-8 sm:w-12 md:w-16 print:w-16 flex items-center justify-center border-r border-black font-bold text-sm sm:text-base md:text-xl print:text-xl [writing-mode:vertical-rl] tracking-[0.5em] sm:tracking-[1.5em] print:tracking-[1.5em]">
             운동장
           </div>
           
           {/* 좌석 */}
           <div className="flex-1 grid grid-cols-5">
             {/* 열 레이블 */}
-            <div className="text-center font-bold py-2 border-b border-r border-black bg-gray-50">1열</div>
-            <div className="text-center font-bold py-2 border-b border-r border-black bg-gray-50">2열</div>
-            <div className="text-center font-bold py-2 border-b border-r border-black bg-gray-50">3열</div>
-            <div className="text-center font-bold py-2 border-b border-r border-black bg-gray-50">4열</div>
-            <div className="text-center font-bold py-2 border-b border-black bg-gray-50">5열</div>
+            <div className="text-center font-bold py-1 sm:py-2 text-xs sm:text-base print:text-base border-b border-r border-black bg-gray-50">1열</div>
+            <div className="text-center font-bold py-1 sm:py-2 text-xs sm:text-base print:text-base border-b border-r border-black bg-gray-50">2열</div>
+            <div className="text-center font-bold py-1 sm:py-2 text-xs sm:text-base print:text-base border-b border-r border-black bg-gray-50">3열</div>
+            <div className="text-center font-bold py-1 sm:py-2 text-xs sm:text-base print:text-base border-b border-r border-black bg-gray-50">4열</div>
+            <div className="text-center font-bold py-1 sm:py-2 text-xs sm:text-base print:text-base border-b border-black bg-gray-50">5열</div>
             
             {/* 셀 렌더링 (행 우선) */}
             {Array.from({ length: maxRows }).map((_, rowIndex) => (
@@ -121,12 +121,12 @@ export const SeatingChart: React.FC<SeatingChartProps> = ({
                   return (
                     <div 
                       key={`${rowIndex}-${colIndex}`}
-                      className={`h-20 print:h-[65px] border-b border-black flex flex-col items-center justify-center p-2 print:p-1 ${isLastCol ? '' : 'border-r'} relative`}
+                      className={`h-16 sm:h-20 print:h-[65px] border-b border-black flex flex-col items-center justify-center p-1 sm:p-2 print:p-1 ${isLastCol ? '' : 'border-r'} relative`}
                     >
                       {student ? (
                         <>
-                          <div className="font-bold text-lg sm:text-xl">{student.name}</div>
-                          <div className="text-gray-600 font-medium text-sm sm:text-base">{formatStudentId(student)}</div>
+                          <div className="font-bold text-sm sm:text-lg md:text-xl print:text-xl">{student.name}</div>
+                          <div className="text-gray-600 font-medium text-[10px] sm:text-sm md:text-base print:text-base">{formatStudentId(student)}</div>
                         </>
                       ) : (
                         <div className="absolute inset-0 w-full h-full">
@@ -143,7 +143,7 @@ export const SeatingChart: React.FC<SeatingChartProps> = ({
           </div>
           
           {/* 복도 */}
-          <div className="w-16 flex items-center justify-center border-l border-black font-bold text-xl [writing-mode:vertical-rl] tracking-[1.5em]">
+          <div className="w-8 sm:w-12 md:w-16 print:w-16 flex items-center justify-center border-l border-black font-bold text-sm sm:text-base md:text-xl print:text-xl [writing-mode:vertical-rl] tracking-[0.5em] sm:tracking-[1.5em] print:tracking-[1.5em]">
             복도
           </div>
         </div>
