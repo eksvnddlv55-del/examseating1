@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, FileText, Settings, Printer, Loader2 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { SeatingChart } from './components/SeatingChart';
 import { ParsedData } from './types';
 
@@ -60,7 +61,7 @@ export default function App() {
 
   const handleProcess = async () => {
     if (!file) {
-      setError('PDF 파일을 업로드해주세요.');
+      setError('엑셀 파일을 업로드해주세요.');
       return;
     }
     if (!isOver36 && !examClassroom1.trim()) {
@@ -76,42 +77,111 @@ export default function App() {
     setError(null);
 
     try {
-      // 파일을 Base64로 변환
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onload = () => {
-          const result = reader.result as string;
-          resolve(result.split(',')[1]); 
-        };
-        reader.onerror = error => reject(error);
-      });
+      // 엑셀 파일을 ArrayBuffer로 읽기
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      const rows = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1 });
 
-      const pdfBase64 = await base64Promise;
+      let subject = '과목미상';
+      let grade = '0';
+      let classGroup = '';
+      const students = [];
 
-      // API 호출
-      const response = await fetch('/api/parse-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          pdfBase64, 
-          examClassroom: examClassroom1 || '미정' 
-        })
-      });
-
-      if (!response.ok) {
-        let errorMsg = '분석 중 오류가 발생했습니다.';
-        try {
-          const errorData = await response.json();
-          if (errorData.error) errorMsg = errorData.error;
-        } catch (e) {
-          errorMsg = `서버 오류가 발생했습니다. (상태 코드: ${response.status})`;
+      // 1. 헤더에서 과목명, 학년, 분반 추출
+      // 예: "교과 : 기하 2학년 2-4 C" 또는 "교과:기하 2학년 2-4 C"
+      for (let i = 0; i < Math.min(rows.length, 10); i++) {
+        for (let j = 0; j < rows[i].length; j++) {
+          const cell = String(rows[i][j] || '');
+          if (cell.includes('교과') && cell.includes('학년')) {
+             const match = cell.match(/교과\s*[:\s]*([^\s]+)\s+(\d+)학년\s+.*?\s+([A-Za-z0-9가-힣]+)$/);
+             if (match) {
+               subject = match[1];
+               grade = match[2];
+               classGroup = match[3];
+             } else {
+               const splits = cell.split(/\s+/);
+               const subjectIndex = splits.findIndex(s => s.includes('교과'));
+               if (subjectIndex !== -1 && splits[subjectIndex+1]) subject = splits[subjectIndex+1].replace(':', '');
+               const gradeMatch = cell.match(/(\d+)학년/);
+               if (gradeMatch) grade = gradeMatch[1];
+               classGroup = splits[splits.length - 1]; 
+               if (subject === '' || subject === ':') subject = splits[subjectIndex+2] || '미상';
+             }
+          }
         }
-        throw new Error(errorMsg);
       }
 
-      const data: ParsedData = await response.json();
+      // 2. 학생 명단 파싱
+      let headerRowIndex = -1;
+      let gradeCol = -1, classCol = -1, numCol = -1, nameCol = -1, hakbunCol = -1;
+      
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        for (let j = 0; j < row.length; j++) {
+          const cell = String(row[j] || '').replace(/\s+/g, '');
+          if (cell === '성명' || cell === '이름') nameCol = j;
+          if (cell === '학년') gradeCol = j;
+          if (cell === '반') classCol = j;
+          if (cell === '번호') numCol = j;
+          if (cell === '학번') hakbunCol = j;
+        }
+        if (nameCol !== -1 && (numCol !== -1 || hakbunCol !== -1)) {
+          headerRowIndex = i;
+          break;
+        }
+      }
+
+      if (headerRowIndex === -1) {
+        throw new Error("엑셀 파일에서 학생 명단 양식(성명, 학번/번호 등)을 찾을 수 없습니다. 나이스 출석부 원본 파일이 맞는지 확인해주세요.");
+      }
+
+      for (let i = headerRowIndex + 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || row.length === 0) continue;
+        const nameRaw = String(row[nameCol] || '').trim();
+        if (!nameRaw) continue;
+
+        if (nameRaw.includes('(위탁)')) continue; // 위탁 학생 제외
+
+        let finalName = nameRaw.replace(/\(공동\)/g, '').trim();
+
+        let sGrade = 0, sClass = 0, sNum = 0;
+
+        if (hakbunCol !== -1 && row[hakbunCol]) {
+          const hakbun = String(row[hakbunCol]).replace(/\D/g, '');
+          if (hakbun.length === 5) {
+            sGrade = parseInt(hakbun.substring(0, 1), 10);
+            sClass = parseInt(hakbun.substring(1, 3), 10);
+            sNum = parseInt(hakbun.substring(3, 5), 10);
+          }
+        } else if (gradeCol !== -1 && classCol !== -1 && numCol !== -1) {
+          sGrade = parseInt(String(row[gradeCol] || '0').replace(/\D/g, ''), 10);
+          sClass = parseInt(String(row[classCol] || '0').replace(/\D/g, ''), 10);
+          sNum = parseInt(String(row[numCol] || '0').replace(/\D/g, ''), 10);
+        }
+
+        if (sGrade > 0 && sClass > 0 && sNum > 0 && finalName) {
+           students.push({
+             grade: sGrade,
+             class: sClass,
+             number: sNum,
+             name: finalName
+           });
+        }
+      }
+
+      if (students.length === 0) {
+        throw new Error("추출된 학생 데이터가 없습니다.");
+      }
+
+      const data: ParsedData = {
+        subject,
+        grade,
+        classGroup,
+        students
+      };
       
       // 체크박스가 해제되어 있는데 총 인원이 37명 이상일 경우 에러 처리
       const validStudents = data.students.filter(s => !isStudentExcluded(s, excludeIds, noExclude));
@@ -160,10 +230,10 @@ export default function App() {
         <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8 print:hidden">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
-            {/* PDF 업로드 */}
+            {/* 엑셀 업로드 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                나이스 출석부 PDF 업로드
+                나이스 출석부 엑셀 업로드
               </label>
               <div 
                 className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
@@ -171,7 +241,7 @@ export default function App() {
               >
                 <input 
                   type="file" 
-                  accept="application/pdf"
+                  accept=".xlsx, .xls, .csv"
                   className="hidden" 
                   ref={fileInputRef}
                   onChange={handleFileChange}
@@ -181,15 +251,15 @@ export default function App() {
                   <p className="text-purple-600 font-medium truncate max-w-[200px]">{file.name}</p>
                 ) : (
                   <>
-                    <p className="text-gray-600 font-medium">클릭하여 파일 선택</p>
-                    <p className="text-xs text-gray-400 mt-1">PDF 형식만 지원합니다</p>
+                    <p className="text-gray-600 font-medium">클릭하여 엑셀 파일 선택</p>
+                    <p className="text-xs text-gray-400 mt-1">.xlsx, .xls, .csv 형식만 지원합니다</p>
                   </>
                 )}
               </div>
               <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
                 <p className="text-xs text-gray-500 font-medium mb-1">나이스 출석부 다운로드 방법</p>
                 <p className="text-xs text-gray-400 leading-relaxed">
-                  [나이스] - [교과담임] - [학적] - [출결관리] - [교과시간별출석부출력]
+                  [나이스] - [교과담임] - [학적] - [출결관리] - [교과시간별출석부출력] (우측 상단 엑셀 아이콘 클릭)
                 </p>
               </div>
             </div>
