@@ -35,7 +35,7 @@ async function startServer() {
       for (let i = 0; i < retries; i++) {
         try {
           response = await ai.models.generateContent({
-            model: 'gemini-3.6-flash',
+            model: 'gemini-3.8-flash',
             contents: [
               {
                 role: 'user',
@@ -81,10 +81,18 @@ async function startServer() {
           break; // success
         } catch (error: any) {
           const isUnavailable = error?.message?.includes('503') || error?.message?.includes('UNAVAILABLE');
-          if (isUnavailable && i < retries - 1) {
-            console.log(`Model unavailable, retrying in ${Math.pow(2, i)} seconds...`);
+          const isRateLimited = error?.message?.includes('429') || error?.message?.includes('quota') || error?.status === 429;
+          
+          if ((isUnavailable || isRateLimited) && i < retries - 1) {
+            console.log(`Model unavailable or rate limited, retrying in ${Math.pow(2, i)} seconds...`);
             await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
             continue;
+          }
+          if (isRateLimited) {
+             throw new Error("AI API 호출 한도(Quota)를 초과했습니다. 잠시 후(약 30초~1분) 다시 시도해주세요.");
+          }
+          if (isUnavailable) {
+             throw new Error("현재 AI 모델 서버에 일시적으로 요청이 많아 지연되고 있습니다. 잠시 후 다시 시도해주세요.");
           }
           throw error;
         }

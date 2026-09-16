@@ -78,20 +78,26 @@ export const SeatingChart: React.FC<SeatingChartProps> = ({
 
   return (
     <div className="w-[1122px] mx-auto bg-white p-8 text-black shadow-lg mb-8 print:p-0 print:m-0 print:w-full print:shadow-none print:mb-0">
-      <h1 className="text-2xl font-bold text-center mb-6">
+      <h1 className="text-2xl font-bold text-center mb-6 print:mb-4">
         2026학년도 2학기 1차 정기시험 {subject}({grade}학년) {classGroup}반({examClassroom}) 자리배치표
       </h1>
       
       <div className="border-2 border-black">
-        {/* 교탁 영역 */}
+        {/* 교탁 영역 (3열과 정확히 일치하도록 너비 및 테두리 조정) */}
         <div className="flex border-b border-black">
-          <div className="w-12 border-r border-black"></div> {/* 운동장 여백 */}
-          <div className="flex-1 text-center py-3 font-bold text-xl tracking-[1em]">교탁</div>
-          <div className="w-12 border-l border-black"></div> {/* 복도 여백 */}
+          <div className="w-16 border-r border-black shrink-0"></div> {/* 운동장 여백 */}
+          <div className="flex-1 grid grid-cols-5">
+            <div className="col-span-2 border-r border-black"></div>
+            <div className="col-span-1 flex items-center justify-center py-3 print:py-2 font-bold text-xl border-r border-black">
+              &nbsp;&nbsp;&nbsp;교탁&nbsp;&nbsp;&nbsp;
+            </div>
+            <div className="col-span-2"></div>
+          </div>
+          <div className="w-16 border-l border-black shrink-0"></div> {/* 복도 여백 */}
         </div>
         
         {/* 본문 격자 영역 */}
-        <div className="flex min-h-[500px]">
+        <div className="flex min-h-[500px] print:min-h-0">
           {/* 운동장 */}
           <div className="w-16 flex items-center justify-center border-r border-black font-bold text-xl [writing-mode:vertical-rl] tracking-[1.5em]">
             운동장
@@ -115,7 +121,7 @@ export const SeatingChart: React.FC<SeatingChartProps> = ({
                   return (
                     <div 
                       key={`${rowIndex}-${colIndex}`}
-                      className={`h-20 print:h-[75px] border-b border-black flex flex-col items-center justify-center p-2 ${isLastCol ? '' : 'border-r'} relative`}
+                      className={`h-20 print:h-[65px] border-b border-black flex flex-col items-center justify-center p-2 print:p-1 ${isLastCol ? '' : 'border-r'} relative`}
                     >
                       {student ? (
                         <>
