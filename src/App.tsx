@@ -259,7 +259,8 @@ export default function App() {
               <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
                 <p className="text-xs text-gray-500 font-medium mb-1">나이스 출석부 다운로드 방법</p>
                 <p className="text-xs text-gray-400 leading-relaxed">
-                  [나이스] - [교과담임] - [학적] - [출결관리] - [교과시간별출석부출력] (우측 상단 엑셀 아이콘 클릭)
+                  [나이스] - [교과담임] - [학적] - [출결관리] - [교과시간별출석부출력]<br />
+                  저장 아이콘 클릭 후 엑셀 선택
                 </p>
               </div>
             </div>
